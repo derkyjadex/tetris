@@ -5,11 +5,11 @@ import qualified Data.Map as Map
 import System.IO
 import Control.Concurrent (threadDelay)
 
-data Color = Green
+data Color = Red | Green | Yellow | Blue
 type Coord = (Int, Int)
 type Board = Map.Map Coord Color
 type Shape = [Coord]
-data Piece = Piece Shape Coord
+data Piece = Piece Shape Coord Color
 data Game = Game Board Piece
 
 -- 10 x 30
@@ -24,11 +24,11 @@ ess    = [(0,0), (1,1), (1,0), (2,1)]
 tee    = [(0,0), (1,0), (2,0), (1,1)]
 
 aPiece :: Piece
-aPiece = Piece ell (6,10)
+aPiece = Piece ell (6,10) Red
 
 aBoard :: Board
-aBoard = foldr f Map.empty [(5,3), (5,6), (5,5)]
-  where f c = Map.insert c Green
+aBoard = foldr f Map.empty [(5,3,Green), (5,6,Yellow), (5,5,Blue)]
+    where f (x,y,c) = Map.insert (x,y) c
 
 aGame :: Game
 aGame = Game aBoard aPiece
@@ -36,7 +36,10 @@ aGame = Game aBoard aPiece
 getLineStr :: Board -> Int -> String
 getLineStr board y = "|" ++ fmap f [0..9] ++ "|"
   where f x = case Map.lookup (x, y) board of
+                Just Red -> 'R'
                 Just Green -> 'G'
+                Just Yellow -> 'Y'
+                Just Blue -> 'B'
                 Nothing -> ' '
 
 getBoardStr :: Board -> String
@@ -46,13 +49,13 @@ getGameStr :: Game -> String
 getGameStr (Game b p) = getBoardStr $ merge b p
 
 translate :: Piece -> [Coord]
-translate (Piece s origin) = map (addCoords origin) s
+translate (Piece s origin _) = map (addCoords origin) s
 
 addCoords :: Coord -> Coord -> Coord
 addCoords (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
 
 merge :: Board -> Piece -> Board
-merge b p = foldr (\coord board -> Map.insert coord Green board) b worldPiece
+merge b p@(Piece _ _ c) = foldr (\coord board -> Map.insert coord c board) b worldPiece
   where worldPiece = translate p
 
 conflicts :: Board -> Piece -> Bool
@@ -61,7 +64,7 @@ conflicts b p = any hit worldPiece
         hit c = Map.member c b
 
 move :: Coord -> Piece -> Piece
-move c (Piece s origin) = Piece s (addCoords origin c)
+move c (Piece s origin color) = Piece s (addCoords origin c) color
 
 down :: Piece -> Piece
 down = move (0, -1)
@@ -76,7 +79,7 @@ rotateLeft :: Piece -> Piece
 rotateLeft = rotateRight . rotateRight . rotateRight
 
 rotateRight :: Piece -> Piece
-rotateRight (Piece cs o) = Piece cs' o
+rotateRight (Piece cs o c) = Piece cs' o c
   where cs' = map f cs
         f (x, y) = (y, -x)
 
