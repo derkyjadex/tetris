@@ -78,22 +78,27 @@ rotateRight (Piece cs o) = Piece cs' o
   where cs' = map f cs
         f (x, y) = (y, -x)
 
-command :: String -> Piece -> Piece
-command "s" = down
-command "a" = left
-command "d" = right
-command "q" = rotateLeft
-command "e" = rotateRight
+command :: Char -> Piece -> Piece
+command 's' = down
+command 'a' = left
+command 'd' = right
+command 'q' = rotateLeft
+command 'e' = rotateRight
 command _ = id
 
 step :: (Piece -> Piece) -> Game -> Game
 step f (Game b p) = Game b (f p)
 
+getCommands :: IO [Piece -> Piece]
+getCommands = do
+    chars <- getLine
+    return $ map command chars
+
 run :: Game -> IO Game
 run game = do
     putStr $ getGameStr game
-    c <- getLine
-    let game' = step (command c) game
+    commands <- getCommands
+    let game' = foldr step game commands
     run game'
 
 main :: IO Game
