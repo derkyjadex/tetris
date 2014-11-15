@@ -34,16 +34,20 @@ aGame :: Game
 aGame = Game aBoard aPiece
 
 getLineStr :: Board -> Int -> String
-getLineStr board y = "|" ++ fmap f [0..9] ++ "|"
-  where f x = case Map.lookup (x, y) board of
-                Just Red -> 'R'
-                Just Green -> 'G'
-                Just Yellow -> 'Y'
-                Just Blue -> 'B'
-                Nothing -> ' '
+getLineStr board y = "║" ++ (concat $ map f [0..9]) ++ "\ESC[40m║"
+    where f x = case Map.lookup (x, y) board of
+                Just Red -> "\ESC[41mλ="
+                Just Green -> "\ESC[42mλ="
+                Just Yellow -> "\ESC[43mλ="
+                Just Blue -> "\ESC[44mλ="
+                Nothing -> "\ESC[40m  "
 
 getBoardStr :: Board -> String
-getBoardStr board = unlines $ fmap (getLineStr board) [30,29..0]
+getBoardStr board = unlines $ ["\ESC[H"] ++ [top] ++ main ++ [bottom]
+    where
+        top = "╔" ++ (replicate 20 '═') ++ "╗"
+        main = map (getLineStr board) [30,29..0]
+        bottom = "╚" ++ (replicate 20 '═') ++ "╝"
 
 getGameStr :: Game -> String
 getGameStr (Game b p) = getBoardStr $ merge b p
@@ -123,5 +127,6 @@ main :: IO Game
 main = do
     hSetBuffering stdin NoBuffering
     hSetEcho stdin False
+    putStr "\ESC[2J"
     run (Game aBoard aPiece)
 
