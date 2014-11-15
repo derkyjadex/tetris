@@ -2,6 +2,8 @@
 module Main where
 
 import qualified Data.Map as Map
+import System.IO
+import Control.Concurrent (threadDelay)
 
 data Color = Green
 type Coord = (Int, Int)
@@ -89,19 +91,34 @@ command _ = id
 step :: (Piece -> Piece) -> Game -> Game
 step f (Game b p) = Game b (f p)
 
+getAvailChars :: IO String
+getAvailChars = do
+    chars <- readChars []
+    return $ reverse chars
+    where readChars prev = do
+          ready <- hReady stdin
+          if ready
+              then do
+                  c <- hGetChar stdin
+                  readChars (c : prev)
+              else return prev
+
 getCommands :: IO [Piece -> Piece]
 getCommands = do
-    chars <- getLine
+    chars <- getAvailChars
     return $ map command chars
 
 run :: Game -> IO Game
 run game = do
     putStr $ getGameStr game
+    threadDelay 100000
     commands <- getCommands
     let game' = foldr step game commands
     run game'
 
 main :: IO Game
 main = do
-  run (Game aBoard aPiece)
+    hSetBuffering stdin NoBuffering
+    hSetEcho stdin False
+    run (Game aBoard aPiece)
 
